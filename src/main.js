@@ -6,6 +6,10 @@
  * Polish Features:
  * - Drift-free timestamp countdown
  * - Animated SVG progress ring
+ * - Real multi-day consecutive streak calculator
+ * - Daily vs. lifetime session separation
+ * - Duration-invariant focus minutes calculation
+ * - Dynamic calendar rollover without history deletion
  * - Dark / Light theme toggle with persistence
  * - Gentle completion chime via Web Audio API (Zero audio dependencies)
  * - Optional browser notifications with permission checks
@@ -14,126 +18,42 @@
  */
 
 import './style.css';
+import {
+  STORAGE_KEY,
+  DAILY_TARGET_SESSIONS,
+  DEFAULT_DURATIONS,
+  DURATION_LIMITS,
+  MODE_LABELS,
+  CIRCLE_RADIUS,
+  CIRCLE_CIRCUMFERENCE,
+  getLocalDateKey,
+  calculateStreak,
+  recordCompletedFocusSession,
+  getDailyStats,
+  migrateStorageData,
+  formatTime,
+  calculateStrokeOffset,
+} from './stats.js';
 
 /* ==========================================================================
-   1. Configuration, Durations & Storage Constants
+   1. State & Storage Initialization
    ========================================================================== */
 
-const STORAGE_KEY = 'focusflow_preferences';
+const systemPrefersLight = Boolean(
+  window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+);
 
-/** Default durations in minutes */
-const DEFAULT_DURATIONS = {
-  'focus': 25,
-  'short-break': 5,
-  'long-break': 15,
-};
-
-/** Validation constraints (in minutes) */
-const DURATION_LIMITS = {
-  'focus': { min: 1, max: 90 },
-  'short-break': { min: 1, max: 60 },
-  'long-break': { min: 1, max: 60 },
-};
-
-/** User-facing labels */
-const MODE_LABELS = {
-  'focus': 'Focus',
-  'short-break': 'Short Break',
-  'long-break': 'Long Break',
-};
-
-/** SVG Progress Ring Geometry (r = 130) */
-const CIRCLE_RADIUS = 130;
-const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
-
-/* ==========================================================================
-   2. LocalStorage Persistence Layer
-   ========================================================================== */
-
-/**
- * Validates and safely retrieves stored settings from localStorage.
- * Falls back to default values if data is missing, null, or corrupted.
- */
-function loadPersistedData() {
-  const defaults = {
-    durations: { ...DEFAULT_DURATIONS },
-    completedSessions: 0,
-    theme: 'dark',
-    soundEnabled: true,
-    notificationEnabled: false,
-  };
-
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        defaults.theme = 'light';
-      }
-      return defaults;
-    }
-
-    const parsed = JSON.parse(raw);
-
-    // Safeguard: Ensure parsed is a non-null, non-array object
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return defaults;
-    }
-
-    // Validate durations
-    const durations = {};
-    for (const [mode, defaultVal] of Object.entries(DEFAULT_DURATIONS)) {
-      const storedVal = parsed.durations ? Number(parsed.durations[mode]) : null;
-      const limits = DURATION_LIMITS[mode];
-
-      if (Number.isInteger(storedVal) && storedVal >= limits.min && storedVal <= limits.max) {
-        durations[mode] = storedVal;
-      } else {
-        durations[mode] = defaultVal;
-      }
-    }
-
-    // Validate completed sessions
-    const storedSessions = Number(parsed.completedSessions);
-    const completedSessions = Number.isInteger(storedSessions) && storedSessions >= 0 ? storedSessions : 0;
-
-    // Validate preferences
-    const theme = parsed.theme === 'light' ? 'light' : 'dark';
-    const soundEnabled = typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true;
-    const notificationEnabled = typeof parsed.notificationEnabled === 'boolean' ? parsed.notificationEnabled : false;
-
-    return { durations, completedSessions, theme, soundEnabled, notificationEnabled };
-  } catch (error) {
-    console.warn('Could not read from localStorage, using defaults.', error);
-    return defaults;
-  }
-}
-
-/**
- * Persists the current preferences and state to localStorage.
- * 
- * @param {Object} data
- */
-function savePersistedData(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Failed to save to localStorage:', error);
-  }
-}
-
-/* ==========================================================================
-   3. Application State
-   ========================================================================== */
-
-const persisted = loadPersistedData();
+// Safely migrate stored data or initialize defaults
+const persisted = migrateStorageData(localStorage.getItem(STORAGE_KEY), systemPrefersLight);
 
 const state = {
   currentMode: 'focus',
   durations: { ...persisted.durations },
-  completedSessions: persisted.completedSessions,
   theme: persisted.theme,
   soundEnabled: persisted.soundEnabled,
   notificationEnabled: persisted.notificationEnabled,
+  stats: persisted.stats,
+  currentDateKey: getLocalDateKey(),
 
   totalSeconds: persisted.durations['focus'] * 60,
   remainingSeconds: persisted.durations['focus'] * 60,
@@ -142,8 +62,28 @@ const state = {
   endTime: null,
 };
 
+/**
+ * Persists current preferences and statistics state to localStorage.
+ */
+function saveCurrentState() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        durations: state.durations,
+        theme: state.theme,
+        soundEnabled: state.soundEnabled,
+        notificationEnabled: state.notificationEnabled,
+        stats: state.stats,
+      })
+    );
+  } catch (error) {
+    console.error('Failed to save to localStorage:', error);
+  }
+}
+
 /* ==========================================================================
-   4. DOM Elements Cache
+   2. DOM Elements Cache
    ========================================================================== */
 
 // Timer elements
@@ -169,6 +109,7 @@ const sessionDots = document.querySelector('#session-dots');
 const statCompletedCount = document.querySelector('#stat-completed-count');
 const statTarget = document.querySelector('#stat-target');
 const statFocusTime = document.querySelector('#stat-focus-time');
+const statStreak = document.querySelector('#stat-streak');
 
 // Settings Modal elements
 const openSettingsBtn = document.querySelector('#open-settings-btn');
@@ -186,7 +127,7 @@ const settingNotification = document.querySelector('#setting-notification');
 const notificationStatusDesc = document.querySelector('#notification-status-desc');
 
 /* ==========================================================================
-   5. Audio & Notification System (Web Audio API & Browser Notifications)
+   3. Audio & Notification System (Web Audio API & Browser Notifications)
    ========================================================================== */
 
 let audioCtx = null;
@@ -281,29 +222,7 @@ function sendBrowserNotification(title, body) {
 }
 
 /* ==========================================================================
-   6. Pure Helper Functions
-   ========================================================================== */
-
-function formatTime(totalSeconds) {
-  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safeSeconds / 60);
-  const seconds = safeSeconds % 60;
-
-  const paddedMinutes = String(minutes).padStart(2, '0');
-  const paddedSeconds = String(seconds).padStart(2, '0');
-
-  return `${paddedMinutes}:${paddedSeconds}`;
-}
-
-function calculateStrokeOffset(remaining, total) {
-  if (total <= 0) return 0;
-  const clampedRemaining = Math.max(0, Math.min(remaining, total));
-  const fractionRemaining = clampedRemaining / total;
-  return CIRCLE_CIRCUMFERENCE * (1 - fractionRemaining);
-}
-
-/* ==========================================================================
-   7. UI Renderers & Theme Application
+   4. UI Renderers & Theme Application
    ========================================================================== */
 
 function renderTimerDisplay() {
@@ -314,7 +233,7 @@ function renderTimerDisplay() {
 
 function renderProgressRing() {
   if (progressRing) {
-    const offset = calculateStrokeOffset(state.remainingSeconds, state.totalSeconds);
+    const offset = calculateStrokeOffset(state.remainingSeconds, state.totalSeconds, CIRCLE_CIRCUMFERENCE);
     progressRing.style.strokeDashoffset = `${offset}`;
   }
 }
@@ -339,31 +258,60 @@ function renderTabs() {
   });
 }
 
+/**
+ * Updates session tracker dots, dashboard statistics, and streak.
+ * Daily stats automatically reflect the current calendar day.
+ */
 function renderSessionStats() {
-  const currentCycleIndex = (state.completedSessions % 4) + 1;
+  const todayStats = getDailyStats(state.stats);
+  const streak = calculateStreak(state.stats.history);
+
+  // Cycle session (1 to 4) reflecting today's completed intervals
+  const currentCycleIndex = (todayStats.completedSessions % 4) + 1;
   if (sessionCount) {
     sessionCount.textContent = currentCycleIndex;
   }
 
+  // Visual cycle indicator dots (4 dots in the current cycle)
   if (sessionDots) {
     const dots = sessionDots.querySelectorAll('.dot');
-    const filledCount = state.completedSessions % 4;
+    const filledCount = todayStats.completedSessions % 4;
     dots.forEach((dot, index) => {
       dot.classList.toggle('filled', index < filledCount);
     });
   }
 
+  // Daily completed focus intervals card (e.g. 2/8)
   if (statCompletedCount) {
-    statCompletedCount.textContent = state.completedSessions;
+    statCompletedCount.textContent = todayStats.completedSessions;
   }
 
+  // Header daily target badge (e.g. 2/8)
   if (statTarget) {
-    statTarget.textContent = `${state.completedSessions}/8`;
+    statTarget.textContent = `${todayStats.completedSessions}/${DAILY_TARGET_SESSIONS}`;
   }
 
+  // Actual minutes focused today (calculated from completed sessions)
   if (statFocusTime) {
-    const totalMinutes = state.completedSessions * state.durations['focus'];
-    statFocusTime.textContent = totalMinutes;
+    statFocusTime.textContent = todayStats.focusMinutes;
+  }
+
+  // Real consecutive-day streak
+  if (statStreak) {
+    statStreak.textContent = streak;
+  }
+}
+
+/**
+ * Checks if the local calendar date has rolled over since last check.
+ * If a new day has arrived, refreshes daily displays while preserving history.
+ */
+function checkDateRollover() {
+  const todayKey = getLocalDateKey();
+  if (todayKey !== state.currentDateKey) {
+    state.currentDateKey = todayKey;
+    renderSessionStats();
+    saveCurrentState();
   }
 }
 
@@ -402,18 +350,8 @@ function renderAll() {
   applyTheme(state.theme);
 }
 
-function saveCurrentState() {
-  savePersistedData({
-    durations: state.durations,
-    completedSessions: state.completedSessions,
-    theme: state.theme,
-    soundEnabled: state.soundEnabled,
-    notificationEnabled: state.notificationEnabled,
-  });
-}
-
 /* ==========================================================================
-   8. Settings Modal & Validation
+   5. Settings Modal & Validation
    ========================================================================== */
 
 function openSettingsModal() {
@@ -519,7 +457,7 @@ async function handleSettingsSubmit(e) {
 
   const oldDurationForCurrentMode = state.durations[state.currentMode];
 
-  // Update state durations
+  // Update state durations and preferences
   state.durations['focus'] = focusVal;
   state.durations['short-break'] = shortBreakVal;
   state.durations['long-break'] = longBreakVal;
@@ -571,10 +509,12 @@ function handleResetDefaults() {
 }
 
 /* ==========================================================================
-   9. Core Timer Actions
+   6. Core Timer Actions
    ========================================================================== */
 
 function tick() {
+  checkDateRollover();
+
   const now = Date.now();
   const millisRemaining = state.endTime - now;
   const secondsLeft = Math.max(0, Math.ceil(millisRemaining / 1000));
@@ -684,7 +624,9 @@ function completeTimer() {
   playGentleChime();
 
   if (state.currentMode === 'focus') {
-    state.completedSessions += 1;
+    // Record session using the actual duration in minutes of the session completed
+    const sessionMinutes = state.durations['focus'];
+    recordCompletedFocusSession(state.stats, sessionMinutes);
     saveCurrentState();
     renderSessionStats();
     renderStatus('Focus session completed! Great job! 🎉');
@@ -699,15 +641,14 @@ function completeTimer() {
 }
 
 /* ==========================================================================
-   10. Keyboard Accessibility & Global Event Listeners
+   7. Keyboard Accessibility & Global Event Listeners
    ========================================================================== */
 
 function setupKeyboardShortcuts() {
   window.addEventListener('keydown', (e) => {
     const activeEl = document.activeElement;
 
-    // 1. Never intercept if user is typing or if a button is focused
-    // (allows Space to natively click buttons/tabs without hijacking)
+    // Never intercept if user is typing or if a button is focused
     if (activeEl && (
       activeEl.tagName === 'INPUT' ||
       activeEl.tagName === 'TEXTAREA' ||
@@ -717,20 +658,20 @@ function setupKeyboardShortcuts() {
       return;
     }
 
-    // 2. Escape closes settings modal
+    // Escape closes settings modal
     if (e.key === 'Escape' && settingsBackdrop && !settingsBackdrop.hasAttribute('hidden')) {
       closeSettingsModal();
       return;
     }
 
-    // 3. Ignore Space and R if settings modal is open
+    // Ignore Space and R if settings modal is open
     if (settingsBackdrop && !settingsBackdrop.hasAttribute('hidden')) {
       return;
     }
 
-    // 4. Space: Start / Pause Toggle
+    // Space: Start / Pause Toggle
     if (e.code === 'Space') {
-      e.preventDefault(); // Prevent accidental page scrolling
+      e.preventDefault();
       if (state.isRunning) {
         pauseTimer();
       } else {
@@ -739,7 +680,7 @@ function setupKeyboardShortcuts() {
       return;
     }
 
-    // 5. R / r: Reset Timer
+    // R / r: Reset Timer
     if (e.key === 'r' || e.key === 'R') {
       e.preventDefault();
       resetTimer();
@@ -791,12 +732,21 @@ function setupEventListeners() {
     });
   }
 
+  // Auto-detect calendar date change when user returns to tab
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      checkDateRollover();
+    }
+  });
+
+  window.addEventListener('focus', checkDateRollover);
+
   // Keyboard Shortcuts
   setupKeyboardShortcuts();
 }
 
 /* ==========================================================================
-   11. Application Initialization
+   8. Application Initialization
    ========================================================================== */
 
 function init() {
@@ -809,7 +759,11 @@ function init() {
   renderStatus('Ready to begin');
   setupEventListeners();
 
-  console.log('FocusFlow ready with polish enhancements! 🚀');
+  console.log('FocusFlow ready with dynamic statistics & streak engine! 🎯', {
+    lifetimeSessions: state.stats.lifetimeSessions,
+    todaySessions: getDailyStats(state.stats).completedSessions,
+    streak: calculateStreak(state.stats.history),
+  });
 }
 
 // Launch
