@@ -86,7 +86,7 @@ focusflow/
 
 1. Clone or download the repository:
    ```bash
-   git clone https://github.com/your-username/focusflow.git
+   git clone https://github.com/lalitchoudhary0907/FocusFlow
    cd focusflow
    ```
 
