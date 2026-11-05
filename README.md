@@ -6,6 +6,14 @@ Designed with an elegant dark/light theme, ambient violet accents, and an animat
 
 ---
 
+## 🌐 Live Demo
+
+🚀 **Try FocusFlow Live:** [https://focus-flow0907.vercel.app](https://focus-flow0907.vercel.app)
+
+Experience the Pomodoro timer directly in your browser — no installation or sign-up required.
+
+---
+
 ## ✨ Features
 
 * **Drift-Free Timestamp Countdown**: Uses wall-clock timestamps (`Date.now()`) to maintain second-accurate timing even when browser tabs are inactive or minimized.
