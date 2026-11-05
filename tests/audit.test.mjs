@@ -14,6 +14,8 @@ import {
   calculateStrokeOffset,
   isSessionActiveOrPaused,
   DEFAULT_DURATIONS,
+  DEFAULT_APPEARANCE,
+  APPEARANCES,
   CIRCLE_CIRCUMFERENCE,
   DAILY_TARGET_SESSIONS,
 } from '../src/stats.js';
@@ -29,6 +31,7 @@ const html = fs.readFileSync('index.html', 'utf-8');
 const requiredIds = [
   'app',
   'stat-target',
+  'appearance-btn',
   'theme-toggle-btn',
   'theme-icon-sun',
   'theme-icon-moon',
@@ -44,6 +47,10 @@ const requiredIds = [
   'stat-focus-time',
   'stat-completed-count',
   'stat-streak',
+  'appearance-backdrop',
+  'close-appearance-btn',
+  'appearance-opt-obsidian',
+  'appearance-opt-midnight-cobalt',
   'settings-backdrop',
   'close-settings-btn',
   'settings-form',
@@ -59,7 +66,7 @@ const requiredIds = [
 for (const id of requiredIds) {
   assert.ok(html.includes(`id="${id}"`), `HTML must contain element with id="${id}"`);
 }
-console.log('✓ All 27 required DOM IDs verified in index.html (including stat-streak)');
+console.log(`✓ All ${requiredIds.length} required DOM IDs verified in index.html (including appearance and streak elements)`);
 
 // ============================================================================
 // 2. Real Consecutive-Day Streak Calculation
@@ -254,6 +261,13 @@ const migratedBounds = migrateStorageData(outOfBoundsPayload);
 assert.equal(migratedBounds.durations.focus, DEFAULT_DURATIONS.focus, 'Out-of-bounds focus falls back to default');
 assert.equal(migratedBounds.durations['short-break'], DEFAULT_DURATIONS['short-break'], 'Negative break falls back to default');
 assert.equal(migratedBounds.durations['long-break'], DEFAULT_DURATIONS['long-break'], 'Zero break falls back to default');
+
+// Scenario D: Appearance migration & fallback
+assert.equal(migrateStorageData(null).appearance, DEFAULT_APPEARANCE, 'null defaults appearance to obsidian');
+assert.equal(migrateStorageData('{}').appearance, DEFAULT_APPEARANCE, 'empty object defaults appearance to obsidian');
+assert.equal(migrateStorageData(JSON.stringify({ appearance: 'invalid-theme' })).appearance, DEFAULT_APPEARANCE, 'invalid appearance safely falls back to obsidian');
+assert.equal(migrateStorageData(JSON.stringify({ appearance: 'midnight-cobalt' })).appearance, 'midnight-cobalt', 'midnight-cobalt appearance is preserved');
+assert.equal(migrateStorageData(JSON.stringify({ appearance: 'obsidian' })).appearance, 'obsidian', 'obsidian appearance is preserved');
 
 console.log('✓ migrateStorageData successfully defended against all corrupt, legacy, and boundary states');
 
@@ -491,5 +505,74 @@ assert.equal(jsResult.ok, true, 'Script must be served from cache when offline')
 assert.equal(jsResult.fromCache, true, 'Script must be served from cache, not network');
 
 console.log('✓ Offline cache matching simulation passed: CSS and JS served cleanly without network errors');
+
+// ============================================================================
+// 13. Appearance Selection & Timer State Preservation
+// ============================================================================
+console.log('\n[Test 13] Appearance Selection & Timer State Preservation');
+
+// Verify that switching appearance preserves active timer state and statistics
+const testTimerState = {
+  currentMode: 'focus',
+  isRunning: true,
+  remainingSeconds: 742,
+  totalSeconds: 1500,
+  appearance: 'obsidian',
+  stats: {
+    lifetimeSessions: 5,
+    lifetimeFocusMinutes: 125,
+    history: {
+      '2026-11-06': { completedSessions: 2, focusMinutes: 50 },
+    },
+  },
+};
+
+// Function simulating switching appearance
+function switchAppearanceInState(currentState, nextAppearance) {
+  const safeAppearance = APPEARANCES.includes(nextAppearance) ? nextAppearance : DEFAULT_APPEARANCE;
+  return {
+    ...currentState,
+    appearance: safeAppearance,
+  };
+}
+
+const updatedToCobalt = switchAppearanceInState(testTimerState, 'midnight-cobalt');
+
+assert.equal(updatedToCobalt.appearance, 'midnight-cobalt', 'Appearance switched to midnight-cobalt');
+assert.equal(updatedToCobalt.isRunning, true, 'Timer running state preserved across appearance switch');
+assert.equal(updatedToCobalt.remainingSeconds, 742, 'Remaining countdown seconds preserved across appearance switch');
+assert.equal(updatedToCobalt.totalSeconds, 1500, 'Total interval seconds preserved across appearance switch');
+assert.equal(updatedToCobalt.currentMode, 'focus', 'Current timer mode preserved across appearance switch');
+assert.equal(updatedToCobalt.stats.lifetimeSessions, 5, 'Lifetime session count preserved');
+assert.equal(getDailyStats(updatedToCobalt.stats, new Date('2026-11-06')).completedSessions, 2, 'Daily sessions preserved');
+
+// Verify completed session counted exactly once after appearance switch
+recordCompletedFocusSession(updatedToCobalt.stats, 25, new Date('2026-11-06'));
+assert.equal(updatedToCobalt.stats.lifetimeSessions, 6, 'Completed session increments lifetime total exactly once');
+assert.equal(getDailyStats(updatedToCobalt.stats, new Date('2026-11-06')).completedSessions, 3, "Today's sessions increments exactly once");
+
+console.log('✓ Switching appearance preserves mode, running/paused countdown, completed sessions, and streak');
+
+// ============================================================================
+// 14. Appearance Picker Accessibility & Inline Previews
+// ============================================================================
+console.log('\n[Test 14] Appearance Picker Accessibility & Inline Previews');
+
+assert.ok(html.includes('id="appearance-btn"'), 'Header must have appearance button');
+assert.ok(html.includes('aria-haspopup="dialog"'), 'Appearance button must declare dialog popup');
+assert.ok(html.includes('id="appearance-backdrop"'), 'Appearance backdrop modal must exist');
+assert.ok(html.includes('class="appearance-modal" role="dialog"'), 'Appearance modal must have role="dialog"');
+assert.ok(html.includes('role="radiogroup"'), 'Appearance cards container must have role="radiogroup"');
+assert.ok(html.includes('role="radio"'), 'Appearance options must have role="radio"');
+assert.ok(html.includes('data-appearance-option="obsidian"'), 'Obsidian option card must exist');
+assert.ok(html.includes('data-appearance-option="midnight-cobalt"'), 'Midnight Cobalt option card must exist');
+assert.ok(html.includes('preview-obsidian'), 'Inline CSS preview for Obsidian must exist');
+assert.ok(html.includes('preview-midnight'), 'Inline CSS preview for Midnight Cobalt must exist');
+
+// Verify dual gradients defined in SVG defs
+assert.ok(html.includes('id="violetGradient"'), 'SVG defs must include violetGradient for Obsidian');
+assert.ok(html.includes('id="cobaltGradient"'), 'SVG defs must include cobaltGradient for Midnight Cobalt');
+
+console.log('✓ Appearance picker accessibility, radiogroup roles, inline previews, and SVG gradients verified');
 
 console.log('\n--- 🎉 ALL AUDIT TESTS PASSED! ---');

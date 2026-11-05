@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-appearance="obsidian">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="FocusFlow — A premium, distraction-free Pomodoro productivity timer." />
-    <meta name="theme-color" content="#0d0e12" />
+    <meta name="theme-color" content="#090a0f" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -34,12 +34,15 @@
       <header class="app-header">
         <div class="brand">
           <div class="brand-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 9c2.5-3 5.5-3 8 0s5.5 3 8 0" />
+              <path d="M4 15c2.5-3 5.5-3 8 0s5.5 3 8 0" />
             </svg>
           </div>
-          <span class="brand-name">FocusFlow</span>
+          <div class="brand-text">
+            <span class="brand-name">FocusFlow</span>
+            <span class="brand-subtitle">POMODORO</span>
+          </div>
         </div>
 
         <div class="header-actions">
@@ -47,6 +50,25 @@
             <span class="target-pulse"></span>
             <span class="target-text">Target: <strong id="stat-target">0/8</strong></span>
           </div>
+
+          <!-- Appearance Picker Button -->
+          <button
+            type="button"
+            id="appearance-btn"
+            class="icon-btn"
+            aria-label="Change appearance (Obsidian or Midnight Cobalt)"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            title="Appearance"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+            </svg>
+          </button>
 
           <!-- Dark/Light Theme Toggle -->
           <button
@@ -131,15 +153,24 @@
           <div class="circle-timer-wrap">
             <svg class="progress-ring" viewBox="0 0 300 300" aria-hidden="true">
               <defs>
-                <!-- Violet Gradient Accent -->
+                <!-- Violet Gradient Accent (Obsidian) -->
                 <linearGradient id="violetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#a78bfa" />
+                  <stop offset="0%" stop-color="#c4b5fd" />
                   <stop offset="50%" stop-color="#8b5cf6" />
                   <stop offset="100%" stop-color="#6d28d9" />
                 </linearGradient>
-                <!-- Subtle glow filter -->
                 <filter id="violetGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#8b5cf6" flood-opacity="0.35" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#8b5cf6" flood-opacity="0.45" />
+                </filter>
+
+                <!-- Cobalt-to-Cyan Gradient Accent (Midnight Cobalt) -->
+                <linearGradient id="cobaltGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#38bdf8" />
+                  <stop offset="50%" stop-color="#06b6d4" />
+                  <stop offset="100%" stop-color="#2563eb" />
+                </linearGradient>
+                <filter id="cobaltGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#06b6d4" flood-opacity="0.45" />
                 </filter>
               </defs>
 
@@ -151,40 +182,32 @@
                 r="130"
               />
 
-              <!-- Active violet progress circle -->
+              <!-- Active progress circle -->
               <circle
                 class="progress-ring__circle"
                 cx="150"
                 cy="150"
                 r="130"
-                filter="url(#violetGlow)"
               />
             </svg>
 
             <!-- Center Content inside Circular Ring -->
             <div class="circle-center-content">
-              <span class="timer-mode-pill" id="timer-mode-label">Focus</span>
+              <div class="timer-center-top">
+                <svg class="timer-top-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="13" r="8" />
+                  <line x1="12" y1="2" x2="12" y2="5" />
+                  <line x1="12" y1="13" x2="15" y2="10" />
+                </svg>
+                <span class="timer-mode-pill" id="timer-mode-label">Focus</span>
+              </div>
               <div class="timer-digits" id="timer-display" aria-live="polite">25:00</div>
               <span class="timer-status-hint" id="timer-status">Ready to begin</span>
             </div>
           </div>
 
-          <!-- Controls: Start, Pause & Reset -->
+          <!-- Controls: Start / Pause / Resume & Reset -->
           <div class="timer-controls">
-            <button
-              type="button"
-              id="reset-btn"
-              class="btn-control btn-secondary"
-              aria-label="Reset timer (Shortcut: R)"
-              title="Reset (R)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-              <span>Reset</span>
-            </button>
-
             <button
               type="button"
               id="start-btn"
@@ -201,15 +224,30 @@
             <button
               type="button"
               id="pause-btn"
-              class="btn-control btn-secondary"
+              class="btn-control btn-primary"
               aria-label="Pause timer (Shortcut: Space)"
               title="Pause (Space)"
+              style="display: none;"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
                 <rect x="6" y="4" width="4" height="16" rx="1" />
                 <rect x="14" y="4" width="4" height="16" rx="1" />
               </svg>
               <span>Pause</span>
+            </button>
+
+            <button
+              type="button"
+              id="reset-btn"
+              class="btn-control btn-secondary"
+              aria-label="Reset timer (Shortcut: R)"
+              title="Reset (R)"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>Reset</span>
             </button>
           </div>
 
@@ -229,19 +267,36 @@
         <!-- Productivity Statistics Section -->
         <section class="stats-grid" aria-label="Session Statistics">
           <div class="stat-card">
-            <span class="stat-label">Focus Time</span>
+            <span class="stat-label">
+              <svg class="stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Focus Time
+            </span>
             <div class="stat-value"><span id="stat-focus-time">0</span><span class="stat-unit">m</span></div>
             <span class="stat-sub">Total today</span>
           </div>
 
           <div class="stat-card">
-            <span class="stat-label">Completed</span>
+            <span class="stat-label">
+              <svg class="stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              Completed
+            </span>
             <div class="stat-value"><span id="stat-completed-count">0</span><span class="stat-unit">/8</span></div>
             <span class="stat-sub">Intervals done</span>
           </div>
 
           <div class="stat-card">
-            <span class="stat-label">Day Streak</span>
+            <span class="stat-label">
+              <svg class="stat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+              </svg>
+              Day Streak
+            </span>
             <div class="stat-value"><span id="stat-streak">0</span><span class="stat-unit">🔥</span></div>
             <span class="stat-sub">Consistency</span>
           </div>
@@ -257,6 +312,82 @@
         <p class="footer-tagline">FocusFlow &bull; Stay centered in your work</p>
       </footer>
 
+    </div>
+
+    <!-- Appearance Picker Modal -->
+    <div id="appearance-backdrop" class="modal-backdrop" hidden>
+      <div class="appearance-modal" role="dialog" aria-modal="true" aria-labelledby="appearance-title">
+        <div class="modal-header">
+          <h2 id="appearance-title" class="modal-title">Select Appearance</h2>
+          <button
+            type="button"
+            id="close-appearance-btn"
+            class="icon-btn close-btn"
+            aria-label="Close appearance picker"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="appearance-cards" role="radiogroup" aria-label="Visual appearances">
+          <!-- Card 1: Obsidian -->
+          <div
+            class="appearance-card active"
+            role="radio"
+            tabindex="0"
+            aria-checked="true"
+            data-appearance-option="obsidian"
+            id="appearance-opt-obsidian"
+          >
+            <div class="preview-canvas preview-obsidian" aria-hidden="true">
+              <div class="preview-ring preview-ring-obsidian"></div>
+              <div class="preview-digits">25:00</div>
+              <div class="preview-btn preview-btn-obsidian"></div>
+            </div>
+            <div class="appearance-card-info">
+              <div class="appearance-card-header">
+                <span class="appearance-name">Obsidian</span>
+                <span class="selected-badge" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              </div>
+              <p class="appearance-desc">Near-black graphite, luminous violet ring & soft ambient glow</p>
+            </div>
+          </div>
+
+          <!-- Card 2: Midnight Cobalt -->
+          <div
+            class="appearance-card"
+            role="radio"
+            tabindex="0"
+            aria-checked="false"
+            data-appearance-option="midnight-cobalt"
+            id="appearance-opt-midnight-cobalt"
+          >
+            <div class="preview-canvas preview-midnight" aria-hidden="true">
+              <div class="preview-ring preview-ring-midnight"></div>
+              <div class="preview-digits">25:00</div>
+              <div class="preview-btn preview-btn-midnight"></div>
+            </div>
+            <div class="appearance-card-info">
+              <div class="appearance-card-header">
+                <span class="appearance-name">Midnight Cobalt</span>
+                <span class="selected-badge" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              </div>
+              <p class="appearance-desc">Midnight navy, cobalt-cyan gradient ring & lime action button</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Settings Modal -->

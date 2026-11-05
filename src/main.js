@@ -24,6 +24,8 @@ import {
   DEFAULT_DURATIONS,
   DURATION_LIMITS,
   MODE_LABELS,
+  DEFAULT_APPEARANCE,
+  APPEARANCES,
   CIRCLE_RADIUS,
   CIRCLE_CIRCUMFERENCE,
   getLocalDateKey,
@@ -51,6 +53,7 @@ const state = {
   currentMode: 'focus',
   durations: { ...persisted.durations },
   theme: persisted.theme,
+  appearance: persisted.appearance || DEFAULT_APPEARANCE,
   soundEnabled: persisted.soundEnabled,
   notificationEnabled: persisted.notificationEnabled,
   stats: persisted.stats,
@@ -75,6 +78,7 @@ function saveCurrentState() {
       JSON.stringify({
         durations: state.durations,
         theme: state.theme,
+        appearance: state.appearance,
         soundEnabled: state.soundEnabled,
         notificationEnabled: state.notificationEnabled,
         stats: state.stats,
@@ -105,6 +109,12 @@ const modeTabs = document.querySelectorAll('.tab-btn');
 const themeToggleBtn = document.querySelector('#theme-toggle-btn');
 const themeIconSun = document.querySelector('#theme-icon-sun');
 const themeIconMoon = document.querySelector('#theme-icon-moon');
+
+// Appearance Picker elements
+const appearanceBtn = document.querySelector('#appearance-btn');
+const closeAppearanceBtn = document.querySelector('#close-appearance-btn');
+const appearanceBackdrop = document.querySelector('#appearance-backdrop');
+const appearanceCards = document.querySelectorAll('.appearance-card');
 
 // Session Tracker & Stats elements
 const sessionCount = document.querySelector('#session-count');
@@ -319,6 +329,20 @@ function checkDateRollover() {
 }
 
 /**
+ * Updates meta theme-color tag to match active appearance and theme.
+ */
+function updateThemeColorMeta() {
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) return;
+
+  if (state.theme === 'light') {
+    themeColorMeta.setAttribute('content', state.appearance === 'midnight-cobalt' ? '#f0f7ff' : '#f9fafb');
+  } else {
+    themeColorMeta.setAttribute('content', state.appearance === 'midnight-cobalt' ? '#080c18' : '#090a0f');
+  }
+}
+
+/**
  * Applies dark or light theme to document and updates toggle icon.
  * 
  * @param {'dark'|'light'} theme
@@ -336,6 +360,72 @@ function applyTheme(theme) {
     if (themeIconMoon) themeIconMoon.removeAttribute('hidden');
     if (themeToggleBtn) themeToggleBtn.setAttribute('title', 'Switch to Dark Mode');
   }
+
+  updateThemeColorMeta();
+}
+
+/**
+ * Applies selected appearance (Obsidian or Midnight Cobalt)
+ * without resetting or interrupting timer state.
+ * 
+ * @param {'obsidian'|'midnight-cobalt'} appearance
+ */
+function applyAppearance(appearance) {
+  const safeAppearance = APPEARANCES.includes(appearance) ? appearance : DEFAULT_APPEARANCE;
+  state.appearance = safeAppearance;
+  document.documentElement.setAttribute('data-appearance', safeAppearance);
+
+  // Update SVG progress ring stroke and glow filter based on appearance
+  if (progressRing) {
+    if (safeAppearance === 'midnight-cobalt') {
+      progressRing.setAttribute('stroke', 'url(#cobaltGradient)');
+      progressRing.setAttribute('filter', 'url(#cobaltGlow)');
+    } else {
+      progressRing.setAttribute('stroke', 'url(#violetGradient)');
+      progressRing.setAttribute('filter', 'url(#violetGlow)');
+    }
+  }
+
+  updateThemeColorMeta();
+  updateAppearancePickerUI();
+}
+
+function setAppearance(appearance) {
+  applyAppearance(appearance);
+  saveCurrentState();
+}
+
+function updateAppearancePickerUI() {
+  const cards = document.querySelectorAll('.appearance-card');
+  cards.forEach((card) => {
+    const isSelected = card.dataset.appearanceOption === state.appearance;
+    card.classList.toggle('active', isSelected);
+    card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+  });
+}
+
+function openAppearanceModal() {
+  if (!appearanceBackdrop) return;
+  updateAppearancePickerUI();
+  appearanceBackdrop.removeAttribute('hidden');
+  if (appearanceBtn) appearanceBtn.setAttribute('aria-expanded', 'true');
+
+  const activeCard = document.querySelector(`.appearance-card[data-appearance-option="${state.appearance}"]`);
+  if (activeCard) {
+    activeCard.focus();
+  } else {
+    const firstCard = document.querySelector('.appearance-card');
+    if (firstCard) firstCard.focus();
+  }
+}
+
+function closeAppearanceModal() {
+  if (!appearanceBackdrop) return;
+  appearanceBackdrop.setAttribute('hidden', '');
+  if (appearanceBtn) {
+    appearanceBtn.setAttribute('aria-expanded', 'false');
+    appearanceBtn.focus();
+  }
 }
 
 function toggleTheme() {
@@ -344,13 +434,45 @@ function toggleTheme() {
   saveCurrentState();
 }
 
+/**
+ * Renders Start / Pause / Resume controls dynamically.
+ */
+function renderControls() {
+  if (!startBtn || !pauseBtn) return;
+
+  if (state.isRunning) {
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-flex';
+    pauseBtn.setAttribute('aria-label', 'Pause timer (Shortcut: Space)');
+    pauseBtn.setAttribute('title', 'Pause (Space)');
+  } else {
+    pauseBtn.style.display = 'none';
+    startBtn.style.display = 'inline-flex';
+
+    const isPaused = state.remainingSeconds < state.totalSeconds && state.remainingSeconds > 0;
+    const startSpan = startBtn.querySelector('span');
+
+    if (isPaused) {
+      if (startSpan) startSpan.textContent = 'Resume';
+      startBtn.setAttribute('aria-label', 'Resume timer (Shortcut: Space)');
+      startBtn.setAttribute('title', 'Resume (Space)');
+    } else {
+      if (startSpan) startSpan.textContent = 'Start';
+      startBtn.setAttribute('aria-label', 'Start timer (Shortcut: Space)');
+      startBtn.setAttribute('title', 'Start (Space)');
+    }
+  }
+}
+
 function renderAll() {
   renderTimerDisplay();
   renderProgressRing();
   renderModeLabel();
   renderTabs();
   renderSessionStats();
+  renderControls();
   applyTheme(state.theme);
+  applyAppearance(state.appearance);
 }
 
 /* ==========================================================================
@@ -553,6 +675,7 @@ function startTimer() {
   state.endTime = Date.now() + state.remainingSeconds * 1000;
   state.timerIntervalId = setInterval(tick, 250);
 
+  renderControls();
   renderStatus(state.currentMode === 'focus' ? 'Stay in flow...' : 'Take a breath...');
 }
 
@@ -571,6 +694,7 @@ function pauseTimer() {
     state.remainingSeconds = Math.max(0, Math.ceil(millisRemaining / 1000));
   }
 
+  renderControls();
   renderStatus('Timer paused');
   renderTimerDisplay();
   renderProgressRing();
@@ -632,6 +756,7 @@ function completeTimer() {
   state.isRunning = false;
   state.remainingSeconds = 0;
   state.endTime = null;
+  renderControls();
 
   // Play gentle completion chime
   playGentleChime();
@@ -681,14 +806,23 @@ function setupKeyboardShortcuts() {
       return;
     }
 
-    // Escape closes settings modal
-    if (e.key === 'Escape' && settingsBackdrop && !settingsBackdrop.hasAttribute('hidden')) {
-      closeSettingsModal();
-      return;
+    // Escape closes appearance or settings modal
+    if (e.key === 'Escape') {
+      if (appearanceBackdrop && !appearanceBackdrop.hasAttribute('hidden')) {
+        closeAppearanceModal();
+        return;
+      }
+      if (settingsBackdrop && !settingsBackdrop.hasAttribute('hidden')) {
+        closeSettingsModal();
+        return;
+      }
     }
 
-    // Ignore Space and R if settings modal is open
-    if (settingsBackdrop && !settingsBackdrop.hasAttribute('hidden')) {
+    // Ignore Space and R if appearance or settings modal is open
+    if (
+      (appearanceBackdrop && !appearanceBackdrop.hasAttribute('hidden')) ||
+      (settingsBackdrop && !settingsBackdrop.hasAttribute('hidden'))
+    ) {
       return;
     }
 
@@ -711,6 +845,46 @@ function setupKeyboardShortcuts() {
   });
 }
 
+function setupAppearancePickerEvents() {
+  if (appearanceBtn) {
+    appearanceBtn.addEventListener('click', openAppearanceModal);
+  }
+
+  if (closeAppearanceBtn) {
+    closeAppearanceBtn.addEventListener('click', closeAppearanceModal);
+  }
+
+  if (appearanceBackdrop) {
+    appearanceBackdrop.addEventListener('click', (e) => {
+      if (e.target === appearanceBackdrop) {
+        closeAppearanceModal();
+      }
+    });
+  }
+
+  const cards = document.querySelectorAll('.appearance-card');
+  cards.forEach((card, index) => {
+    card.addEventListener('click', () => {
+      setAppearance(card.dataset.appearanceOption);
+    });
+
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setAppearance(card.dataset.appearanceOption);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (index + 1) % cards.length;
+        cards[nextIndex].focus();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (index - 1 + cards.length) % cards.length;
+        cards[prevIndex].focus();
+      }
+    });
+  });
+}
+
 function setupEventListeners() {
   // Timer Controls
   if (startBtn) startBtn.addEventListener('click', startTimer);
@@ -726,6 +900,9 @@ function setupEventListeners() {
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener('click', toggleTheme);
   }
+
+  // Appearance Picker Events
+  setupAppearancePickerEvents();
 
   // Settings Modal Controls
   if (openSettingsBtn) openSettingsBtn.addEventListener('click', openSettingsModal);

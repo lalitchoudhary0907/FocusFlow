@@ -16,6 +16,10 @@ Experience the Pomodoro timer directly in your browser — no installation or si
 
 ## ✨ Features
 
+* **Dual Visual Appearances (Obsidian & Midnight Cobalt)**:
+  * **Obsidian**: Near-black graphite canvas, luminous violet progress ring, off-white digits, soft translucent surfaces, and subtle ambient glows.
+  * **Midnight Cobalt**: Deep midnight navy canvas, vibrant cobalt-to-cyan progress ring, crisp white digits, dark navy statistics cards, and an eye-catching neon lime action button.
+  * **Accessible Appearance Picker**: Integrated header palette button opening visual preview cards with instant keyboard navigation (Arrow keys, Enter, Esc), local persistence, and safe default fallback.
 * **Offline Support (PWA Service Worker)**: Precaches the app shell and production build assets on the first online visit, enabling fully functional offline usage, timer execution, and local progress tracking.
 * **Drift-Free Timestamp Countdown**: Uses wall-clock timestamps (`Date.now()`) to maintain second-accurate timing even when browser tabs are inactive or minimized.
 * **Animated Circular Progress Ring**: Scalable SVG ring with mathematical progress offsets and smooth easing.
@@ -28,8 +32,9 @@ Experience the Pomodoro timer directly in your browser — no installation or si
   * Visual 4-session cycle progress dots.
   * Total daily intervals completed (`/8`).
   * Total focus minutes calculated automatically.
-* **Local Data Persistence**: Saves your durations, preferences, and completed sessions across reloads using `localStorage`. No login, backend, or cloud database required.
-* **Dark / Light Mode**: Seamless theme toggle between deep charcoal (`#0d0e12`) and clean paper light mode (`#f8fafc`).
+  * Consecutive-day streak engine.
+* **Local Data Persistence**: Saves your durations, preferences, appearance, and completed sessions across reloads using `localStorage`. No login, backend, or cloud database required.
+* **Dark / Light Mode**: Seamless theme toggle supporting both Obsidian and Midnight Cobalt appearances in both light and dark modes.
 * **Gentle Completion Chime**: Soothing 3-tone harmonic chime synthesized on the fly using the browser's native **Web Audio API** (requires zero external audio files or network bandwidth).
 * **Optional Desktop Notifications**: Opt-in browser notifications to alert you when focus sessions or breaks finish.
 * **Keyboard Shortcuts**: Start, pause, or reset without taking your hands off the keyboard.
@@ -43,7 +48,7 @@ Experience the Pomodoro timer directly in your browser — no installation or si
 | :--- | :--- | :--- |
 | <kbd>Space</kbd> | Start / Pause | Active across page (ignored while typing or focusing buttons) |
 | <kbd>R</kbd> | Reset Timer | Resets countdown to active mode's duration |
-| <kbd>Esc</kbd> | Close Modal | Closes settings panel |
+| <kbd>Esc</kbd> | Close Modal | Closes active settings or appearance picker modal |
 
 ---
 

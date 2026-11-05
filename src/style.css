@@ -1,44 +1,63 @@
 /* ==========================================================================
-   FocusFlow — Premium Modern Stylesheet
+   FocusFlow — Redesigned Stylesheet with Obsidian & Midnight Cobalt Appearances
    Crafted with pure vanilla CSS, custom properties, and responsive layout.
-   Themes: Deep charcoal (Dark) & Clean paper (Light) with violet accents.
+   Appearances:
+     1. Obsidian (Near-black graphite, luminous violet ring, soft ambient glow)
+     2. Midnight Cobalt (Midnight navy, cobalt-to-cyan ring, lime primary action)
+   Supports dark & light modes for both appearances.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Design Tokens & Theme Variables (Dark Mode Default)
+   1. Design Tokens: Base Variables & Obsidian Dark (Default)
    -------------------------------------------------------------------------- */
-:root {
-  /* Surface Layers (Deep Charcoal Dark Theme) */
-  --bg-app: #0d0e12;
-  --bg-surface: #13141c;
-  --bg-surface-elevated: #1a1c27;
-  --bg-surface-hover: #222534;
-  --bg-spotlight-1: rgba(139, 92, 246, 0.16);
+:root,
+[data-appearance="obsidian"] {
+  /* Surfaces: Near-Black Graphite */
+  --bg-app: #090a0f;
+  --bg-surface: rgba(18, 19, 27, 0.92);
+  --bg-surface-elevated: #191a26;
+  --bg-surface-hover: #222434;
+  --bg-spotlight-1: rgba(139, 92, 246, 0.14);
   --bg-spotlight-2: rgba(124, 58, 237, 0.08);
 
-  /* Subtle Borders & Dividers */
-  --border-subtle: rgba(255, 255, 255, 0.07);
+  /* Borders & Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.08);
   --border-medium: rgba(255, 255, 255, 0.14);
-  --border-active: rgba(139, 92, 246, 0.45);
+  --border-active: rgba(139, 92, 246, 0.5);
 
-  /* Violet Accents & Glows */
+  /* Accents & Glows: Luminous Violet */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #a78bfa;
+  --accent-tertiary: #6d28d9;
+  --accent-glow: rgba(139, 92, 246, 0.35);
+  --accent-subtle: rgba(139, 92, 246, 0.12);
+
+  /* Violet Compatibility Aliases */
   --violet-400: #a78bfa;
   --violet-500: #8b5cf6;
   --violet-600: #7c3aed;
   --violet-700: #6d28d9;
-  --violet-glow: rgba(139, 92, 246, 0.32);
+  --violet-glow: rgba(139, 92, 246, 0.35);
   --violet-subtle: rgba(139, 92, 246, 0.12);
 
-  /* Feedback Colors */
-  --color-danger: #f87171;
-  --color-danger-bg: rgba(248, 113, 113, 0.12);
+  /* Primary Action Button (Violet Gradient) */
+  --btn-primary-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  --btn-primary-text: #ffffff;
+  --btn-primary-shadow: 0 8px 24px -4px rgba(139, 92, 246, 0.42);
+  --btn-primary-hover-bg: linear-gradient(135deg, #a78bfa, #8b5cf6);
+
+  /* Secondary Button */
+  --btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --btn-secondary-text: #e2e8f0;
+  --btn-secondary-border: rgba(255, 255, 255, 0.09);
+  --btn-secondary-hover-bg: rgba(255, 255, 255, 0.1);
+  --btn-secondary-hover-text: #ffffff;
 
   /* Typography */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-faint: #475569;
-
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Sizing & Radius */
@@ -47,14 +66,28 @@
   --radius-lg: 24px;
   --radius-pill: 9999px;
 
-  /* Track Ring Stroke */
-  --ring-track-color: rgba(255, 255, 255, 0.04);
+  /* Progress Ring */
+  --ring-track-color: rgba(255, 255, 255, 0.05);
   --ring-glow-fill: rgba(139, 92, 246, 0.08);
 
+  /* Session Dots & Highlights */
+  --dot-filled-bg: #8b5cf6;
+  --dot-filled-border: #8b5cf6;
+  --dot-filled-glow: 0 0 10px rgba(139, 92, 246, 0.6);
+  --stat-highlight: #f8fafc;
+
+  /* Tabs */
+  --tab-active-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 2px 10px rgba(139, 92, 246, 0.45);
+
+  /* Feedback Colors */
+  --color-danger: #f87171;
+  --color-danger-bg: rgba(248, 113, 113, 0.12);
+
   /* Shadows */
-  --shadow-card: 0 24px 48px -12px rgba(0, 0, 0, 0.65), 0 0 1px 1px rgba(255, 255, 255, 0.04);
-  --shadow-modal: 0 32px 64px -16px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.08);
-  --shadow-primary-btn: 0 8px 24px -4px var(--violet-glow);
+  --shadow-card: 0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+  --shadow-modal: 0 32px 64px -16px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(255, 255, 255, 0.08);
 
   /* Transitions */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -62,9 +95,79 @@
 }
 
 /* --------------------------------------------------------------------------
-   Light Mode Theme Overrides
+   2. Midnight Cobalt Appearance (Dark)
    -------------------------------------------------------------------------- */
-[data-theme="light"] {
+[data-appearance="midnight-cobalt"] {
+  /* Surfaces: Midnight Navy */
+  --bg-app: #080c18;
+  --bg-surface: rgba(14, 21, 41, 0.9);
+  --bg-surface-elevated: #131e3d;
+  --bg-surface-hover: #1a2952;
+  --bg-spotlight-1: rgba(37, 99, 235, 0.18);
+  --bg-spotlight-2: rgba(6, 182, 212, 0.12);
+
+  /* Borders & Dividers */
+  --border-subtle: rgba(56, 189, 248, 0.14);
+  --border-medium: rgba(56, 189, 248, 0.24);
+  --border-active: rgba(6, 182, 212, 0.55);
+
+  /* Accents & Glows: Cobalt to Cyan */
+  --accent-primary: #06b6d4;
+  --accent-secondary: #38bdf8;
+  --accent-tertiary: #2563eb;
+  --accent-glow: rgba(6, 182, 212, 0.4);
+  --accent-subtle: rgba(6, 182, 212, 0.14);
+
+  --violet-400: #38bdf8;
+  --violet-500: #06b6d4;
+  --violet-600: #2563eb;
+  --violet-700: #1d4ed8;
+  --violet-glow: rgba(6, 182, 212, 0.4);
+  --violet-subtle: rgba(6, 182, 212, 0.14);
+
+  /* Primary Action Button: Vibrant Neon Lime with High Contrast Dark Text */
+  --btn-primary-bg: #a3e635;
+  --btn-primary-text: #080c18;
+  --btn-primary-shadow: 0 8px 24px -4px rgba(163, 230, 53, 0.45);
+  --btn-primary-hover-bg: #bef264;
+
+  /* Secondary Button: Dark Navy */
+  --btn-secondary-bg: rgba(14, 21, 41, 0.9);
+  --btn-secondary-text: #e2e8f0;
+  --btn-secondary-border: rgba(56, 189, 248, 0.2);
+  --btn-secondary-hover-bg: rgba(22, 34, 66, 0.95);
+  --btn-secondary-hover-text: #ffffff;
+
+  /* Typography */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-faint: #38bdf866;
+
+  /* Progress Ring */
+  --ring-track-color: rgba(255, 255, 255, 0.06);
+  --ring-glow-fill: rgba(6, 182, 212, 0.08);
+
+  /* Session Dots & Highlights */
+  --dot-filled-bg: #a3e635;
+  --dot-filled-border: #a3e635;
+  --dot-filled-glow: 0 0 10px rgba(163, 230, 53, 0.6);
+  --stat-highlight: #a3e635;
+
+  /* Tabs */
+  --tab-active-bg: linear-gradient(135deg, #2563eb, #1d4ed8);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 2px 12px rgba(37, 99, 235, 0.5);
+
+  --shadow-card: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 0 1px 1px rgba(56, 189, 248, 0.1);
+  --shadow-modal: 0 32px 64px -16px rgba(0, 0, 0, 0.92), 0 0 1px 1px rgba(56, 189, 248, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   3. Obsidian Light Mode Overrides
+   -------------------------------------------------------------------------- */
+[data-theme="light"],
+[data-appearance="obsidian"][data-theme="light"] {
   --bg-app: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #f1f5f9;
@@ -81,15 +184,67 @@
   --text-muted: #64748b;
   --text-faint: #94a3b8;
 
+  --btn-secondary-bg: #f1f5f9;
+  --btn-secondary-text: #475569;
+  --btn-secondary-border: rgba(15, 23, 42, 0.1);
+  --btn-secondary-hover-bg: #e2e8f0;
+  --btn-secondary-hover-text: #0f172a;
+
   --ring-track-color: rgba(15, 23, 42, 0.06);
   --ring-glow-fill: rgba(139, 92, 246, 0.04);
 
   --shadow-card: 0 20px 40px -15px rgba(15, 23, 42, 0.07), 0 0 1px 1px rgba(15, 23, 42, 0.05);
   --shadow-modal: 0 28px 56px -12px rgba(15, 23, 42, 0.2), 0 0 1px 1px rgba(15, 23, 42, 0.08);
+
+  --stat-highlight: #7c3aed;
 }
 
 /* --------------------------------------------------------------------------
-   2. CSS Reset & Document Setup
+   4. Midnight Cobalt Light Mode Overrides
+   -------------------------------------------------------------------------- */
+[data-appearance="midnight-cobalt"][data-theme="light"] {
+  --bg-app: #f0f7ff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #e0f2fe;
+  --bg-surface-hover: #bae6fd;
+  --bg-spotlight-1: rgba(37, 99, 235, 0.08);
+  --bg-spotlight-2: rgba(6, 182, 212, 0.05);
+
+  --border-subtle: rgba(37, 99, 235, 0.12);
+  --border-medium: rgba(37, 99, 235, 0.2);
+  --border-active: rgba(37, 99, 235, 0.6);
+
+  --text-primary: #0c4a6e;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+
+  --btn-primary-bg: #0284c7;
+  --btn-primary-text: #ffffff;
+  --btn-primary-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.35);
+  --btn-primary-hover-bg: #0369a1;
+
+  --btn-secondary-bg: #e0f2fe;
+  --btn-secondary-text: #0369a1;
+  --btn-secondary-border: rgba(37, 99, 235, 0.2);
+  --btn-secondary-hover-bg: #bae6fd;
+  --btn-secondary-hover-text: #0c4a6e;
+
+  --ring-track-color: rgba(37, 99, 235, 0.08);
+  --ring-glow-fill: rgba(6, 182, 212, 0.06);
+
+  --dot-filled-bg: #0284c7;
+  --dot-filled-border: #0284c7;
+  --dot-filled-glow: 0 0 8px rgba(2, 132, 199, 0.4);
+  --stat-highlight: #0284c7;
+
+  --tab-active-bg: linear-gradient(135deg, #0284c7, #2563eb);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   5. CSS Reset & Document Setup
    -------------------------------------------------------------------------- */
 *,
 *::before,
@@ -123,7 +278,7 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   3. Page Entrance Animations
+   6. Page Entrance Animations
    -------------------------------------------------------------------------- */
 @keyframes enterFadeSlide {
   from {
@@ -138,12 +293,12 @@ body {
 
 .app-container {
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
   margin: 0 auto;
-  padding: 32px 20px 20px;
+  padding: 28px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
   min-height: 100vh;
   justify-content: space-between;
 }
@@ -165,7 +320,7 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   4. App Header & Brand Area
+   7. App Header & Brand Area
    -------------------------------------------------------------------------- */
 .app-header {
   display: flex;
@@ -177,24 +332,30 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .brand-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
   color: #ffffff;
-  box-shadow: 0 4px 14px var(--violet-glow);
+  box-shadow: 0 4px 14px var(--accent-glow);
   transition: transform var(--transition-fast);
 }
 
 .brand:hover .brand-icon {
-  transform: rotate(15deg);
+  transform: rotate(12deg);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
 }
 
 .brand-name {
@@ -202,6 +363,15 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+}
+
+.brand-subtitle {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 .header-actions {
@@ -215,7 +385,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 6px 13px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
@@ -225,18 +395,18 @@ body {
 }
 
 .target-badge strong {
-  color: var(--violet-500);
+  color: var(--accent-primary);
 }
 
 .target-pulse {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: var(--violet-500);
-  box-shadow: 0 0 8px var(--violet-500);
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary);
 }
 
-/* Icon Buttons (Settings, Theme Toggle, Close) */
+/* Icon Buttons (Appearance, Settings, Theme Toggle, Close) */
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -264,32 +434,32 @@ body {
 }
 
 .icon-btn:focus-visible {
-  outline: 2px solid var(--violet-400);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
 /* --------------------------------------------------------------------------
-   5. Main Content Wrapper
+   8. Main Content Wrapper
    -------------------------------------------------------------------------- */
 .main-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   width: 100%;
 }
 
 /* --------------------------------------------------------------------------
-   6. Primary Timer Card
+   9. Primary Timer Card
    -------------------------------------------------------------------------- */
 .timer-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 32px 24px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
@@ -303,11 +473,11 @@ body {
   left: 20%;
   right: 20%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, var(--border-active), transparent);
 }
 
 /* --------------------------------------------------------------------------
-   7. Mode Tabs (Focus, Short Break, Long Break)
+   10. Mode Tabs (Focus, Short Break, Long Break)
    -------------------------------------------------------------------------- */
 .mode-tabs {
   display: flex;
@@ -341,19 +511,19 @@ body {
 }
 
 .tab-btn:focus-visible {
-  outline: 2px solid var(--violet-400);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
 .tab-btn.active {
-  background-color: var(--violet-600);
-  color: #ffffff;
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
   font-weight: 600;
-  box-shadow: 0 2px 10px var(--violet-glow);
+  box-shadow: var(--tab-active-shadow);
 }
 
 /* --------------------------------------------------------------------------
-   8. Large Circular Countdown Display & Animated Ring
+   11. Circular Countdown Display & Animated Ring
    -------------------------------------------------------------------------- */
 .circle-timer-wrap {
   position: relative;
@@ -386,21 +556,26 @@ body {
 .progress-ring__track {
   fill: none;
   stroke: var(--ring-track-color);
-  stroke-width: 7;
+  stroke-width: 6;
   transition: stroke var(--transition-normal);
 }
 
 .progress-ring__circle {
   fill: none;
   stroke: url(#violetGradient);
-  stroke-width: 7;
+  stroke-width: 6;
   stroke-linecap: round;
   stroke-dasharray: 816.81;
   stroke-dashoffset: 0;
   transform-origin: 50% 50%;
   transform: rotate(-90deg);
-  /* Smooth animated stepping as countdown ticks or resets */
+  filter: url(#violetGlow);
   transition: stroke-dashoffset 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-appearance="midnight-cobalt"] .progress-ring__circle {
+  stroke: url(#cobaltGradient);
+  filter: url(#cobaltGlow);
 }
 
 .circle-center-content {
@@ -410,16 +585,32 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.timer-center-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.timer-top-icon {
+  color: var(--accent-primary);
+  opacity: 0.85;
+}
+
+[data-appearance="midnight-cobalt"] .timer-top-icon {
+  display: none;
 }
 
 .timer-mode-pill {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--violet-500);
-  background-color: var(--violet-subtle);
+  letter-spacing: 0.12em;
+  color: var(--accent-primary);
+  background-color: var(--accent-subtle);
   padding: 3px 12px;
   border-radius: var(--radius-pill);
 }
@@ -442,7 +633,7 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   9. Controls (Start, Pause, Reset)
+   12. Controls (Start, Pause, Resume, Reset)
    -------------------------------------------------------------------------- */
 .timer-controls {
   display: flex;
@@ -477,41 +668,41 @@ body {
 }
 
 .btn-control:focus-visible {
-  outline: 2px solid var(--violet-400);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 3px;
 }
 
-/* Primary Action (Start) */
+/* Primary Action Button (Start / Pause / Resume) */
 .btn-primary {
   flex: 1.4;
   padding: 13px 22px;
-  background: linear-gradient(135deg, var(--violet-500), var(--violet-600));
-  color: #ffffff;
-  box-shadow: var(--shadow-primary-btn);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--violet-400), var(--violet-500));
-  box-shadow: 0 10px 28px -2px var(--violet-glow);
+  background: var(--btn-primary-hover-bg);
+  box-shadow: 0 10px 28px -2px var(--accent-glow);
 }
 
-/* Secondary Actions (Reset, Pause) */
+/* Secondary Action Button (Reset) */
 .btn-secondary {
   flex: 1;
-  padding: 13px 16px;
-  background-color: var(--bg-surface-elevated);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
+  padding: 13px 18px;
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .btn-secondary:hover {
-  background-color: var(--bg-surface-hover);
-  color: var(--text-primary);
+  background-color: var(--btn-secondary-hover-bg);
+  color: var(--btn-secondary-hover-text);
   border-color: var(--border-medium);
 }
 
 /* --------------------------------------------------------------------------
-   10. Session Progress Tracker
+   13. Four-Session Cycle Tracker
    -------------------------------------------------------------------------- */
 .session-tracker {
   display: flex;
@@ -534,12 +725,12 @@ body {
 .session-dots {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
@@ -547,14 +738,14 @@ body {
 }
 
 .dot.filled {
-  background-color: var(--violet-500);
-  border-color: var(--violet-500);
-  box-shadow: 0 0 8px var(--violet-glow);
-  transform: scale(1.1);
+  background-color: var(--dot-filled-bg);
+  border-color: var(--dot-filled-border);
+  box-shadow: var(--dot-filled-glow);
+  transform: scale(1.15);
 }
 
 /* --------------------------------------------------------------------------
-   11. Statistics Cards Grid
+   14. Productivity Statistics Cards Grid
    -------------------------------------------------------------------------- */
 .stats-grid {
   display: grid;
@@ -567,7 +758,7 @@ body {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 16px 14px;
+  padding: 15px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -585,6 +776,13 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-icon {
+  opacity: 0.75;
 }
 
 .stat-value {
@@ -597,10 +795,15 @@ body {
   gap: 2px;
 }
 
+/* Midnight Cobalt streak highlight */
+[data-appearance="midnight-cobalt"] #stat-streak {
+  color: var(--stat-highlight);
+}
+
 .stat-unit {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--violet-500);
+  color: var(--accent-secondary);
 }
 
 .stat-sub {
@@ -609,7 +812,169 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   12. Settings Modal
+   15. Appearance Picker Modal & Preview Cards
+   -------------------------------------------------------------------------- */
+.appearance-modal {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 460px;
+  padding: 24px;
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+
+.appearance-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.appearance-card {
+  background-color: var(--bg-surface-elevated);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: none;
+  outline: none;
+}
+
+.appearance-card:hover {
+  border-color: var(--border-medium);
+  background-color: var(--bg-surface-hover);
+  transform: translateY(-2px);
+}
+
+.appearance-card:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.appearance-card.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 4px 16px -2px var(--accent-glow);
+}
+
+/* Preview Canvas inside card */
+.preview-canvas {
+  height: 84px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.preview-obsidian {
+  background-color: #090a0f;
+}
+
+.preview-midnight {
+  background-color: #080c18;
+}
+
+.preview-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  position: absolute;
+}
+
+.preview-ring-obsidian {
+  border-top-color: #8b5cf6;
+  border-right-color: #a78bfa;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+.preview-ring-midnight {
+  border-top-color: #06b6d4;
+  border-right-color: #2563eb;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+}
+
+.preview-digits {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f8fafc;
+  z-index: 1;
+}
+
+.preview-btn {
+  position: absolute;
+  bottom: 6px;
+  width: 32px;
+  height: 7px;
+  border-radius: 9999px;
+}
+
+.preview-btn-obsidian {
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+}
+
+.preview-btn-midnight {
+  background-color: #a3e635;
+  box-shadow: 0 0 6px rgba(163, 230, 53, 0.5);
+}
+
+.appearance-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appearance-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.appearance-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.selected-badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+[data-appearance="midnight-cobalt"] .selected-badge {
+  color: #080c18;
+}
+
+.appearance-card.active .selected-badge {
+  display: inline-flex;
+}
+
+.appearance-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* --------------------------------------------------------------------------
+   16. Settings Modal
    -------------------------------------------------------------------------- */
 .modal-backdrop {
   position: fixed;
@@ -695,8 +1060,8 @@ body {
 }
 
 .form-input:focus {
-  border-color: var(--violet-400);
-  box-shadow: 0 0 0 3px var(--violet-subtle);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
 /* Preferences Toggles (Sound & Notification) */
@@ -761,8 +1126,8 @@ body {
 }
 
 .toggle-checkbox:checked {
-  background-color: var(--violet-600);
-  border-color: var(--violet-600);
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 .toggle-checkbox:checked::before {
@@ -771,7 +1136,7 @@ body {
 }
 
 .toggle-checkbox:focus-visible {
-  outline: 2px solid var(--violet-400);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
@@ -814,12 +1179,12 @@ body {
 }
 
 .btn-text:hover {
-  color: var(--violet-500);
+  color: var(--accent-primary);
   text-decoration: underline;
 }
 
 .btn-text:focus-visible {
-  outline: 2px solid var(--violet-400);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -831,14 +1196,14 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   13. Minimal Footer & Keyboard Shortcut Badges
+   17. Minimal Footer & Keyboard Shortcut Badges
    -------------------------------------------------------------------------- */
 .app-footer {
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .footer-shortcuts {
@@ -870,7 +1235,7 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   14. Responsive Adaptations (Mobile & Small Screens)
+   18. Responsive Adaptations (Mobile & Small Screens)
    -------------------------------------------------------------------------- */
 @media (max-width: 480px) {
   .app-container {
@@ -935,6 +1300,7 @@ body {
     font-size: 1.15rem;
   }
 
+  .appearance-modal,
   .settings-modal {
     padding: 20px 16px;
   }
@@ -954,6 +1320,12 @@ body {
   }
 }
 
+@media (max-width: 380px) {
+  .appearance-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 360px) {
   .app-header {
     flex-wrap: wrap;
@@ -968,7 +1340,7 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   15. Accessibility: Respect prefers-reduced-motion
+   19. Accessibility: Respect prefers-reduced-motion
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -988,7 +1360,8 @@ body {
   .btn-control:active,
   .icon-btn:hover,
   .icon-btn:active,
-  .stat-card:hover {
+  .stat-card:hover,
+  .appearance-card:hover {
     transform: none !important;
   }
 }

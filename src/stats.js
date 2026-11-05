@@ -35,6 +35,9 @@ export const MODE_LABELS = {
   'long-break': 'Long Break',
 };
 
+export const DEFAULT_APPEARANCE = 'obsidian';
+export const APPEARANCES = ['obsidian', 'midnight-cobalt'];
+
 export const CIRCLE_RADIUS = 130;
 export const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
@@ -215,6 +218,7 @@ export function migrateStorageData(raw, systemPrefersLight = false) {
   const defaults = {
     durations: { ...DEFAULT_DURATIONS },
     theme: defaultTheme,
+    appearance: DEFAULT_APPEARANCE,
     soundEnabled: true,
     notificationEnabled: false,
     stats: {
@@ -246,6 +250,7 @@ export function migrateStorageData(raw, systemPrefersLight = false) {
 
     // 2. Preferences
     const theme = parsed.theme === 'light' ? 'light' : 'dark';
+    const appearance = APPEARANCES.includes(parsed.appearance) ? parsed.appearance : DEFAULT_APPEARANCE;
     const soundEnabled = typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true;
     const notificationEnabled = typeof parsed.notificationEnabled === 'boolean' ? parsed.notificationEnabled : false;
 
@@ -287,7 +292,7 @@ export function migrateStorageData(raw, systemPrefersLight = false) {
       stats.history = {};
     }
 
-    return { durations, theme, soundEnabled, notificationEnabled, stats };
+    return { durations, theme, appearance, soundEnabled, notificationEnabled, stats };
   } catch (err) {
     return defaults;
   }
