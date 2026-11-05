@@ -38,6 +38,26 @@ export const MODE_LABELS = {
 export const CIRCLE_RADIUS = 130;
 export const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
+/**
+ * Checks whether an active or paused focus session is currently in progress.
+ * Ensures the app never force-reloads or interrupts the user during focus sessions.
+ * 
+ * @param {Object} state
+ * @returns {boolean}
+ */
+export function isSessionActiveOrPaused(state) {
+  if (!state) return false;
+  if (state.isRunning) return true;
+  if (
+    state.currentMode === 'focus' &&
+    state.remainingSeconds < state.totalSeconds &&
+    state.remainingSeconds > 0
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /* ==========================================================================
    2. Date Utilities (Local Calendar Aware)
    ========================================================================== */

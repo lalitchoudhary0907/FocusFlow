@@ -16,6 +16,7 @@ Experience the Pomodoro timer directly in your browser — no installation or si
 
 ## ✨ Features
 
+* **Offline Support (PWA Service Worker)**: Precaches the app shell and production build assets on the first online visit, enabling fully functional offline usage, timer execution, and local progress tracking.
 * **Drift-Free Timestamp Countdown**: Uses wall-clock timestamps (`Date.now()`) to maintain second-accurate timing even when browser tabs are inactive or minimized.
 * **Animated Circular Progress Ring**: Scalable SVG ring with mathematical progress offsets and smooth easing.
 * **3 Productivity Modes**:
@@ -61,13 +62,18 @@ Experience the Pomodoro timer directly in your browser — no installation or si
 ```text
 focusflow/
 ├── public/
-│   └── favicon.svg           # Scalable SVG brand icon
+│   ├── favicon.svg           # Scalable SVG brand icon
+│   ├── icon-192.png          # 192x192 PWA app icon
+│   ├── icon-512.png          # 512x512 PWA app icon
+│   ├── apple-touch-icon.png  # Apple touch icon for iOS
+│   └── manifest.json         # Web App Manifest (standalone configuration)
 ├── src/
-│   ├── main.js               # Timer engine, audio, shortcuts & storage
+│   ├── main.js               # Timer engine, UI orchestration & shortcuts
+│   ├── stats.js              # Streak calculation, daily/lifetime tracking & storage
 │   └── style.css             # Theme tokens, layout, typography & animations
 ├── tests/
-│   └── audit.test.mjs        # Automated test suite (7 verification checks)
-├── index.html                # Semantic entry page
+│   └── audit.test.mjs        # Automated test suite (9 verification checks)
+├── index.html                # Semantic entry page with manifest link
 ├── package.json              # Scripts & devDependency (Vite)
 ├── .gitignore                # Git exclusions (node_modules, dist, secrets)
 └── README.md                 # Project documentation

@@ -33,6 +33,7 @@ import {
   migrateStorageData,
   formatTime,
   calculateStrokeOffset,
+  isSessionActiveOrPaused,
 } from './stats.js';
 
 /* ==========================================================================
@@ -60,6 +61,8 @@ const state = {
   isRunning: false,
   timerIntervalId: null,
   endTime: null,
+  pendingUpdateWorker: null,
+  pendingReload: false,
 };
 
 /**
@@ -213,7 +216,7 @@ function sendBrowserNotification(title, body) {
     try {
       new Notification(title, {
         body,
-        icon: '/favicon.svg',
+        icon: '/icon-192.png',
       });
     } catch (error) {
       console.warn('Could not display notification:', error);
@@ -586,6 +589,16 @@ function resetTimer() {
 
   renderAll();
   renderStatus('Ready to begin');
+
+  // If a background update was deferred during an active/paused session, process it now
+  if (state.pendingUpdateWorker && !isSessionActiveOrPaused(state)) {
+    state.pendingUpdateWorker.postMessage({ type: 'SKIP_WAITING' });
+    state.pendingUpdateWorker = null;
+  }
+  if (state.pendingReload && !isSessionActiveOrPaused(state)) {
+    state.pendingReload = false;
+    window.location.reload();
+  }
 }
 
 function switchMode(mode) {
@@ -638,6 +651,16 @@ function completeTimer() {
 
   renderTimerDisplay();
   renderProgressRing();
+
+  // If a background update was deferred during the session, process it now that session completed
+  if (state.pendingUpdateWorker && !isSessionActiveOrPaused(state)) {
+    state.pendingUpdateWorker.postMessage({ type: 'SKIP_WAITING' });
+    state.pendingUpdateWorker = null;
+  }
+  if (state.pendingReload && !isSessionActiveOrPaused(state)) {
+    state.pendingReload = false;
+    window.location.reload();
+  }
 }
 
 /* ==========================================================================
@@ -746,7 +769,59 @@ function setupEventListeners() {
 }
 
 /* ==========================================================================
-   8. Application Initialization
+   8. Production Service Worker Registration
+   ========================================================================== */
+
+/**
+ * Registers the production service worker and safely handles updates.
+ * Guarantees the app never force-reloads during an active or paused focus session.
+ */
+function registerProductionServiceWorker() {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) {
+    return;
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {
+        // Detect updates to sw.js on subsequent visits
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('FocusFlow update available.');
+              if (!isSessionActiveOrPaused(state)) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              } else {
+                state.pendingUpdateWorker = newWorker;
+              }
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        console.warn('Service worker registration failed:', err);
+      });
+
+    // Guard controllerchange: never reload during active/paused session
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      if (isSessionActiveOrPaused(state)) {
+        state.pendingReload = true;
+        return;
+      }
+      refreshing = true;
+      window.location.reload();
+    });
+  });
+}
+
+/* ==========================================================================
+   9. Application Initialization
    ========================================================================== */
 
 function init() {
@@ -758,6 +833,7 @@ function init() {
   renderAll();
   renderStatus('Ready to begin');
   setupEventListeners();
+  registerProductionServiceWorker();
 
   console.log('FocusFlow ready with dynamic statistics & streak engine! 🎯', {
     lifetimeSessions: state.stats.lifetimeSessions,

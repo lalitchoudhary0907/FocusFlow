@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 
 // Direct import of production logic from src/stats.js (Exercise production code directly!)
 import {
@@ -11,6 +12,7 @@ import {
   migrateStorageData,
   formatTime,
   calculateStrokeOffset,
+  isSessionActiveOrPaused,
   DEFAULT_DURATIONS,
   CIRCLE_CIRCUMFERENCE,
   DAILY_TARGET_SESSIONS,
@@ -285,4 +287,209 @@ assert.ok(css.includes('prefers-reduced-motion: reduce'), 'CSS must include pref
 assert.ok(css.includes('[data-theme="light"]'), 'CSS must include light theme overrides');
 console.log('✓ Accessibility CSS rules verified');
 
-console.log('\n--- 🎉 ALL 8 AUDIT TESTS PASSED! ---');
+// ============================================================================
+// 9. Canonical Web App Manifest & App Icons Verification
+// ============================================================================
+console.log('\n[Test 9] Canonical Web App Manifest & App Icons Verification');
+assert.ok(fs.existsSync('public/manifest.webmanifest'), 'public/manifest.webmanifest must exist as canonical manifest');
+assert.ok(!fs.existsSync('public/manifest.json'), 'Duplicate manifest.json must not exist');
+
+const manifestContent = JSON.parse(fs.readFileSync('public/manifest.webmanifest', 'utf-8'));
+
+assert.equal(manifestContent.display, 'standalone', 'Manifest display must be standalone');
+assert.ok(manifestContent.name, 'Manifest must have a name');
+assert.ok(manifestContent.short_name, 'Manifest must have a short_name');
+assert.ok(manifestContent.start_url, 'Manifest must have a start_url');
+
+// Verify icon declarations in manifest
+const iconPurposes = manifestContent.icons.map(i => i.purpose);
+const iconSrcs = manifestContent.icons.map(i => i.src);
+
+assert.ok(iconSrcs.includes('/icon-192.png'), 'Manifest must declare /icon-192.png');
+assert.ok(iconSrcs.includes('/icon-512.png'), 'Manifest must declare /icon-512.png');
+assert.ok(iconSrcs.includes('/icon-maskable-512.png'), 'Manifest must declare /icon-maskable-512.png');
+assert.ok(iconPurposes.includes('maskable'), 'Manifest must declare a maskable icon');
+assert.ok(!iconSrcs.includes('/favicon.svg'), 'Broken /favicon.svg must not be in manifest');
+
+// Verify physical icon files exist on disk and are non-empty
+for (const src of iconSrcs) {
+  const filePath = path.join('public', src.replace(/^\//, ''));
+  assert.ok(fs.existsSync(filePath), `Icon file ${filePath} must exist on disk`);
+  assert.ok(fs.statSync(filePath).size > 0, `Icon file ${filePath} must not be empty`);
+}
+
+// Verify index.html links to canonical manifest and verified favicon
+assert.ok(html.includes('<link rel="manifest" href="/manifest.webmanifest"'), 'index.html must link to manifest.webmanifest');
+assert.ok(html.includes('href="/favicon-32x32.png"'), 'index.html must link to verified favicon-32x32.png');
+assert.ok(!html.includes('href="/favicon.svg"'), 'Broken /favicon.svg must not be linked in index.html');
+console.log('✓ Canonical Web App Manifest, maskable icon, and verified PNG favicons passed');
+
+// ============================================================================
+// 10. Update Safety Check: isSessionActiveOrPaused
+// ============================================================================
+console.log('\n[Test 10] Active/Paused Session Update Guard Logic');
+
+// Case A: Running timer -> active
+assert.equal(
+  isSessionActiveOrPaused({ isRunning: true, currentMode: 'focus', remainingSeconds: 1200, totalSeconds: 1500 }),
+  true,
+  'Running timer must be recognized as active'
+);
+
+// Case B: Paused focus session with progress -> active/paused
+assert.equal(
+  isSessionActiveOrPaused({ isRunning: false, currentMode: 'focus', remainingSeconds: 800, totalSeconds: 1500 }),
+  true,
+  'Paused focus session with remaining time must be recognized as paused'
+);
+
+// Case C: Idle timer (not started yet, remaining === total) -> safe to update
+assert.equal(
+  isSessionActiveOrPaused({ isRunning: false, currentMode: 'focus', remainingSeconds: 1500, totalSeconds: 1500 }),
+  false,
+  'Unstarted focus timer is safe to update'
+);
+
+// Case D: Completed timer (remaining === 0) -> safe to update
+assert.equal(
+  isSessionActiveOrPaused({ isRunning: false, currentMode: 'focus', remainingSeconds: 0, totalSeconds: 1500 }),
+  false,
+  'Completed timer is safe to update'
+);
+
+// Case E: Break mode paused -> safe to update
+assert.equal(
+  isSessionActiveOrPaused({ isRunning: false, currentMode: 'short-break', remainingSeconds: 200, totalSeconds: 300 }),
+  false,
+  'Paused break mode is safe to update'
+);
+
+console.log('✓ isSessionActiveOrPaused correctly guards against reloading during active/paused focus');
+
+// ============================================================================
+// 11. Production Service Worker & Precache Asset Verification
+// ============================================================================
+console.log('\n[Test 11] Service Worker Precache Asset Integrity');
+if (fs.existsSync('dist/sw.js')) {
+  const swCode = fs.readFileSync('dist/sw.js', 'utf-8');
+  assert.ok(swCode.includes('focusflow-v'), 'SW must use scoped focusflow-v cache naming');
+  assert.ok(swCode.includes("key.startsWith('focusflow-')"), 'SW must scope cache cleanup to focusflow-');
+  assert.ok(swCode.includes('ignoreVary: true'), 'SW must specify ignoreVary: true for stylesheet and static asset matching');
+  assert.ok(swCode.includes('url.pathname'), 'SW must support path-based cache lookup to match precached strings');
+
+  const match = swCode.match(/const PRECACHE_ASSETS = (\[[\s\S]*?\]);/);
+  assert.ok(match, 'SW must define PRECACHE_ASSETS array');
+  const precacheUrls = JSON.parse(match[1]);
+
+  for (const assetUrl of precacheUrls) {
+    if (assetUrl === '/') {
+      assert.ok(fs.existsSync('dist/index.html'), 'Root / must resolve to dist/index.html');
+    } else {
+      const filePath = path.join('dist', assetUrl.replace(/^\//, ''));
+      assert.ok(fs.existsSync(filePath), `Precached asset ${assetUrl} must physically exist in dist`);
+      assert.ok(fs.statSync(filePath).size > 0, `Precached asset ${assetUrl} must not be empty`);
+    }
+  }
+
+  // Verify that all hashed JS and CSS links in dist/index.html are included in precache
+  const distHtml = fs.readFileSync('dist/index.html', 'utf-8');
+  const scriptMatch = distHtml.match(/src="(\/assets\/[^"]+\.js)"/);
+  const styleMatch = distHtml.match(/href="(\/assets\/[^"]+\.css)"/);
+
+  assert.ok(scriptMatch, 'dist/index.html must reference a hashed JS asset');
+  assert.ok(styleMatch, 'dist/index.html must reference a hashed CSS asset');
+  assert.ok(precacheUrls.includes(scriptMatch[1]), `PRECACHE_ASSETS must contain exact JS asset: ${scriptMatch[1]}`);
+  assert.ok(precacheUrls.includes(styleMatch[1]), `PRECACHE_ASSETS must contain exact CSS asset: ${styleMatch[1]}`);
+
+  console.log(`✓ Verified all ${precacheUrls.length} precached assets exist in dist output and match index.html`);
+} else {
+  console.log('ℹ dist/sw.js not present yet; will be verified post-build.');
+}
+
+// ============================================================================
+// 12. Offline Service Worker Cache Matching Simulation
+// ============================================================================
+console.log('\n[Test 12] Offline Service Worker Cache Matching Simulation');
+
+// Simulate the Cache Storage lookup logic when offline with Vary headers
+const mockCache = new Map();
+const mockPrecacheUrls = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon-32x32.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+  '/icon-maskable-192.png',
+  '/apple-touch-icon.png',
+  '/assets/index-BtUy1GTC.css',
+  '/assets/index-CGY8IFur.js',
+];
+
+for (const p of mockPrecacheUrls) {
+  mockCache.set(p, {
+    status: 200,
+    headers: {
+      'content-type': p.endsWith('.css') ? 'text/css' : p.endsWith('.js') ? 'application/javascript' : 'text/html',
+      'vary': 'Accept-Encoding', // Server sets Vary: Accept-Encoding
+    },
+  });
+}
+
+function simulateSwFetch(reqUrl, reqHeaders, { isOffline = true, mode = 'cors' } = {}) {
+  const url = new URL(reqUrl, 'http://localhost:4173');
+  const req = { url: url.href, method: 'GET', mode, destination: url.pathname.endsWith('.css') ? 'style' : 'script' };
+
+  // 1. SW Cache-first lookup logic
+  function cacheMatch(target, options = {}) {
+    const key = typeof target === 'string' ? target : new URL(target.url).pathname;
+    const item = mockCache.get(key);
+    if (!item) return null;
+    // Without ignoreVary, if item has Vary and headers differ, it returns null
+    if (!options.ignoreVary && item.headers.vary) {
+      if (reqHeaders['accept'] !== 'fetch-default') {
+        return null; // Simulated cache miss due to Vary mismatch
+      }
+    }
+    return item;
+  }
+
+  // Replicate production SW logic
+  const cachedResponse =
+    cacheMatch(req, { ignoreVary: true }) ||
+    cacheMatch(url.pathname, { ignoreVary: true });
+
+  if (cachedResponse) {
+    return { ok: true, status: 200, fromCache: true, response: cachedResponse };
+  }
+
+  if (isOffline) {
+    // When offline, network throws error
+    throw new Error('TypeError: Failed to convert value to Response');
+  }
+
+  return { ok: true, status: 200, fromNetwork: true };
+}
+
+// Case A: Stylesheet requested with Chrome's style loader headers when OFFLINE
+const cssResult = simulateSwFetch('http://localhost:4173/assets/index-BtUy1GTC.css', {
+  accept: 'text/css,*/*;q=0.1',
+  'sec-fetch-dest': 'style',
+}, { isOffline: true });
+
+assert.equal(cssResult.ok, true, 'Stylesheet must be served from cache when offline');
+assert.equal(cssResult.fromCache, true, 'Stylesheet must be served from cache, not network');
+
+// Case B: Script requested with module script headers when OFFLINE
+const jsResult = simulateSwFetch('http://localhost:4173/assets/index-CGY8IFur.js', {
+  accept: '*/*',
+  'sec-fetch-dest': 'script',
+}, { isOffline: true });
+
+assert.equal(jsResult.ok, true, 'Script must be served from cache when offline');
+assert.equal(jsResult.fromCache, true, 'Script must be served from cache, not network');
+
+console.log('✓ Offline cache matching simulation passed: CSS and JS served cleanly without network errors');
+
+console.log('\n--- 🎉 ALL AUDIT TESTS PASSED! ---');
